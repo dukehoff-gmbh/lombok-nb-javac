@@ -1,0 +1,109 @@
+#
+# Copyright 2026 Dukehoff GmbH
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: Release
+
+# A tag v<version> (e.g. v1.0.0) builds that version and publishes a GitHub release with the NBM and its
+# checksum. Started by hand (Actions > Release > Run workflow) it is a dry run: the same build, the NBM
+# only as a workflow artifact.
+# A tag also uploads the plugin to Maven Central, which the NetBeans Plugin Portal takes plugins from, once
+# the secrets CENTRAL_USERNAME and CENTRAL_PASSWORD (a Central Portal user token) and MAVEN_GPG_PRIVATE_KEY
+# and MAVEN_GPG_PASSPHRASE (the signing key) are set. The upload then waits in the Central Portal for
+# "Publish", unless the repository variable CENTRAL_AUTO_PUBLISH is true.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version for the dry run, e.g. 1.0.0'
+        required: true
+        default: '0.0.0-dryrun'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PUBLISH_CENTRAL: ${{ github.ref_type == 'tag' && secrets.CENTRAL_USERNAME != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Version
+        id: version
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then version=${GITHUB_REF_NAME#v}; else version=${{ inputs.version }}; fi
+          echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' || { echo "not a version: $version"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # the version in the pom comes from the tag; nothing is committed
+      - name: Build
+        run: |
+          mvn -B -ntp versions:set -DnewVersion=${{ steps.version.outputs.version }} -DgenerateBackupPoms=false
+          mvn -B -ntp clean package
+
+      - name: Checksums
+        working-directory: target
+        run: sha256sum lombok-nb-javac-${{ steps.version.outputs.version }}.nbm > SHA256SUMS
+
+      - name: Publish the release
+        if: github.ref_type == 'tag'
+        working-directory: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          lombok=$(mvn -B -q help:evaluate -Dexpression=lombok.version -DforceStdout -f ../pom.xml)
+          cat > notes.md <<EOF
+          Lombok for nb-javac ${VERSION}, with Lombok ${lombok}. Install \`lombok-nb-javac-${VERSION}.nbm\` in
+          NetBeans (Tools > Plugins > Downloaded) and restart NetBeans when asked. \`SHA256SUMS\` has the checksum.
+          EOF
+          prerelease=; case "$VERSION" in *-*) prerelease=--prerelease ;; esac
+          gh release create "${GITHUB_REF_NAME}" --title "Lombok for nb-javac ${VERSION}" \
+              --notes-file notes.md --generate-notes $prerelease \
+              "lombok-nb-javac-${VERSION}.nbm" SHA256SUMS
+
+      - name: Maven Central credentials and signing key
+        if: env.PUBLISH_CENTRAL == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          server-id: central
+          server-username: CENTRAL_USERNAME
+          server-password: CENTRAL_PASSWORD
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      # the pom already carries the tag's version (Build)
+      - name: Publish to Maven Central
+        if: env.PUBLISH_CENTRAL == 'true'
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          mvn -B -ntp -P central deploy -DskipTests \
+              -Dcentral.autoPublish=${{ vars.CENTRAL_AUTO_PUBLISH == 'true' }}
+
+      - name: Keep the NBM (dry run)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lombok-nb-javac-${{ steps.version.outputs.version }}
+          path: |
+            target/lombok-nb-javac-${{ steps.version.outputs.version }}.nbm
+            target/SHA256SUMS
+          retention-days: 7

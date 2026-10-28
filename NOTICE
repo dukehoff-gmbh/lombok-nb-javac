@@ -1,0 +1,8 @@
+Lombok for nb-javac
+Copyright 2026 Dukehoff GmbH
+
+This product includes software developed at Dukehoff GmbH (https://dukehoff.com),
+licensed under the Apache License, Version 2.0 (LICENSE).
+
+The NetBeans plugin bundles Project Lombok (https://projectlombok.org),
+Copyright (C) 2009-2021 The Project Lombok Authors, under the MIT License (LICENSE-lombok).

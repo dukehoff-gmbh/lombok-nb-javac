@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2026 Dukehoff GmbH
+    SPDX-License-Identifier: Apache-2.0
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.dukehoff.netbeans</groupId>
+    <artifactId>lombok-nb-javac</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>nbm</packaging>
+    <name>Lombok for nb-javac</name>
+    <description>Uses a current Lombok on NetBeans' annotation processor path when a project's Lombok is too old for
+        the javac NetBeans parses with (nb-javac), so the editor and the index see the generated members.
+        The project's own build is not changed.</description>
+    <url>https://github.com/dukehoff-gmbh/lombok-nb-javac</url>
+    <organization>
+        <name>Dukehoff GmbH</name>
+        <url>https://dukehoff.com</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>Anton Epple</name>
+            <organization>Dukehoff GmbH</organization>
+            <organizationUrl>https://dukehoff.com</organizationUrl>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:https://github.com/dukehoff-gmbh/lombok-nb-javac.git</connection>
+        <developerConnection>scm:git:git@github.com:dukehoff-gmbh/lombok-nb-javac.git</developerConnection>
+        <url>https://github.com/dukehoff-gmbh/lombok-nb-javac</url>
+    </scm>
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/dukehoff-gmbh/lombok-nb-javac/issues</url>
+    </issueManagement>
+
+    <properties>
+        <!-- the NetBeans release the module is compiled against -->
+        <netbeans.version>RELEASE310</netbeans.version>
+        <!-- the Lombok inside the NBM: NetBeans 31 (nb-javac 27) needs 1.18.48 or newer -->
+        <lombok.version>1.18.48</lombok.version>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-netbeans-api-java</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-netbeans-api-java-classpath</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-filesystems</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-modules</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util-lookup</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.netbeans.utilities</groupId>
+                <artifactId>nbm-maven-plugin</artifactId>
+                <version>14.5</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <codeNameBase>com.dukehoff.netbeans.lombok</codeNameBase>
+                    <author>Dukehoff GmbH</author>
+                    <homePageUrl>https://github.com/dukehoff-gmbh/lombok-nb-javac</homePageUrl>
+                    <licenseName>Apache License, Version 2.0</licenseName>
+                    <licenseFile>${project.basedir}/LICENSE</licenseFile>
+                    <!-- projects open at install time keep their processor path until a restart -->
+                    <requiresRestart>true</requiresRestart>
+                    <!-- Lombok, its license and our NOTICE for NetBeans' processor path, not on the module's classpath -->
+                    <nbmResources>
+                        <nbmResource>
+                            <directory>${project.build.directory}/nbm-files</directory>
+                        </nbmResource>
+                    </nbmResources>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <!-- NetBeans annotation processors (@ServiceProvider) run from the classpath -->
+                    <proc>full</proc>
+                    <compilerArgs>
+                        <arg>-Xlint:all</arg>
+                        <arg>-Xlint:-serial</arg>
+                        <arg>-Xlint:-processing</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <!-- the module manifest written by nbm-maven-plugin -->
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.8.1</version>
+                <executions>
+                    <execution>
+                        <id>bundled-lombok</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.projectlombok</groupId>
+                                    <artifactId>lombok</artifactId>
+                                    <version>${lombok.version}</version>
+                                    <outputDirectory>${project.build.directory}/nbm-files/modules/ext/lombok-nb-javac</outputDirectory>
+                                    <destFileName>lombok.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>notices</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/nbm-files/modules/ext/lombok-nb-javac</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}</directory>
+                                    <includes>
+                                        <include>LICENSE-lombok</include>
+                                        <include>NOTICE</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- mvn validate checks the license headers, mvn license:format adds them to new files -->
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>5.1.2</version>
+                <configuration>
+                    <strictCheck>true</strictCheck>
+                    <!-- the plugin's default excludes skip Markdown, which carries headers here -->
+                    <useDefaultExcludes>false</useDefaultExcludes>
+                    <properties>
+                        <license.owner>Dukehoff GmbH</license.owner>
+                        <license.year>2026</license.year>
+                    </properties>
+                    <licenseSets>
+                        <licenseSet>
+                            <header>src/license/header.txt</header>
+                            <excludes>
+                                <exclude>LICENSE</exclude>
+                                <exclude>LICENSE-lombok</exclude>
+                                <exclude>NOTICE</exclude>
+                                <exclude>src/license/**</exclude>
+                                <exclude>**/.git/**</exclude>
+                                <exclude>**/.gitignore</exclude>
+                                <exclude>**/.DS_Store</exclude>
+                                <exclude>.claude/**</exclude>
+                                <exclude>CLAUDE.md</exclude>
+                                <exclude>**/target/**</exclude>
+                                <exclude>**/*.mf</exclude>
+                            </excludes>
+                        </licenseSet>
+                    </licenseSets>
+                    <mapping>
+                        <java>SLASHSTAR_STYLE</java>
+                        <md>XML_STYLE</md>
+                    </mapping>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>license-headers</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    <profiles>
+        <!-- Maven Central (the NetBeans Plugin Portal takes plugins only from there): sources, Javadoc and
+             GPG signatures, uploaded through the Central Portal (the release workflow runs mvn -P central deploy).
+             -Dcentral.skipUpload=true builds the bundle (target/central-publishing) without uploading;
+             -Dcentral.autoPublish=true publishes without the manual step in the portal. -->
+        <profile>
+            <id>central</id>
+            <properties>
+                <central.skipUpload>false</central.skipUpload>
+                <central.autoPublish>false</central.autoPublish>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.11.2</version>
+                        <configuration>
+                            <doclint>none</doclint>
+                            <quiet>true</quiet>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.7</version>
+                        <configuration>
+                            <!-- the passphrase from MAVEN_GPG_PASSPHRASE, no pinentry (CI) -->
+                            <gpgArguments>
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <!-- 0.12.0 or newer: before, with Maven 3.10 (GitHub's runners) the bundle kept
+                             maven-metadata-local.xml next to the version folders and Central rejected it
+                             ("Bundle has content that does NOT have a .pom file") -->
+                        <version>0.12.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <skipUpload>${central.skipUpload}</skipUpload>
+                            <autoPublish>${central.autoPublish}</autoPublish>
+                            <waitUntil>validated</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

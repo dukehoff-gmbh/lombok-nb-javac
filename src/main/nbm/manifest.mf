@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+OpenIDE-Module-Localizing-Bundle: com/dukehoff/netbeans/lombok/Bundle.properties
+OpenIDE-Module-Provides: com.dukehoff.netbeans.lombok
+AutoUpdate-Show-In-Client: true
