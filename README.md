@@ -42,6 +42,24 @@ mvn clean package        # target/lombok-nb-javac-<version>.nbm, with the unit t
 The Lombok version inside the plugin is `lombok.version` in `pom.xml`. When NetBeans moves to a newer
 nb-javac, the plugin needs a Lombok release that supports that javac.
 
+## Compatibility
+
+`compat/check.py` compiles `demo/` with a given nb-javac and Lombok, the way NetBeans runs them:
+
+```sh
+python3 compat/check.py --nb-javac jdk-27+26 --lombok 1.18.46,1.18.48
+```
+
+| nb-javac | NetBeans | Lombok |
+|---|---|---|
+| jdk-27+26 | 31 | 1.18.48 works; 1.18.42 to 1.18.46 fail (`ClassNotFoundException: com.sun.tools.javac.tree.EndPosTable`) |
+| jdk-26+35 | 30 | 1.18.44 and 1.18.46 work |
+
+Without arguments it checks the nb-javac of NetBeans' master branch, of open NetBeans pull requests that
+move to a newer nb-javac, and the newest nb-javac on Maven Central against the bundled and the newest Lombok
+releases. A daily workflow runs it and keeps the result in the issue labeled `compatibility`, so a new
+nb-javac that needs a newer Lombok shows up before the NetBeans release that brings it.
+
 ## License
 
 Apache License 2.0 (`LICENSE`). The plugin bundles Project Lombok under the MIT License

@@ -1,0 +1,65 @@
+#
+# Copyright 2026 Dukehoff GmbH
+# SPDX-License-Identifier: Apache-2.0
+#
+
+name: Compatibility
+
+# Daily: which Lombok versions work with the nb-javac of NetBeans' master branch, of open NetBeans pull
+# requests that move to a newer nb-javac, and the newest nb-javac on Maven Central (compat/check.py).
+# The table is the body of one open issue labeled "compatibility"; a change adds a comment, so watchers
+# hear about it. The run fails when the bundled Lombok no longer works with NetBeans' master nb-javac.
+# Nothing is posted to NetBeans.
+
+on:
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Check
+        id: check
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 compat/check.py --markdown table.md
+
+      - name: Report in the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "Which Lombok versions work with the nb-javac NetBeans uses or is about to use, checked daily"
+            echo "by compiling \`demo/\` with nb-javac (\`compat/check.py\`). Updated by the Compatibility workflow."
+            echo
+            cat table.md
+          } > body.md
+          gh label create compatibility --color 0e8a16 --description "Lombok and nb-javac" --force
+          issue=$(gh issue list --label compatibility --state open --json number --jq '.[0].number')
+          if [ -z "$issue" ]; then
+            gh issue create --title "Lombok and nb-javac compatibility" --label compatibility --body-file body.md
+          elif [ "$(gh issue view "$issue" --json body --jq .body)" != "$(cat body.md)" ]; then
+            gh issue edit "$issue" --body-file body.md
+            gh issue comment "$issue" --body "The table changed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+
+      - name: Bundled Lombok still works
+        if: steps.check.outcome == 'failure'
+        run: |
+          echo "::error::The bundled Lombok fails with NetBeans' master nb-javac; see the table"
+          exit 1

@@ -34,3 +34,7 @@ jobs:
       - name: Demo
         working-directory: demo
         run: mvn -B -ntp -q package && java -cp target/classes demo.Main
+
+      # the bundled Lombok with the nb-javac of the NetBeans release the plugin is built for (NetBeans 31)
+      - name: Bundled Lombok with nb-javac
+        run: python3 compat/check.py --nb-javac jdk-27+26 --lombok "$(mvn -q help:evaluate -Dexpression=lombok.version -DforceStdout)"
