@@ -26,12 +26,17 @@ NetBeans 31, and shows none once the plugin is installed. See [demo/README.md](d
 
 ## Install
 
-1. Download `lombok-nb-javac-<version>.nbm` from the [releases](https://github.com/dukehoff-gmbh/lombok-nb-javac/releases).
-2. In NetBeans: Tools > Plugins > Downloaded > Add Plugins..., choose the file, Install.
-3. Restart NetBeans when the installer asks: projects that are already open keep their processor path
+1. In NetBeans: Tools > Plugins > Available Plugins, search for "Lombok for nb-javac", check it, Install.
+   It comes from the [NetBeans Plugin Portal](https://plugins.netbeans.apache.org/), which NetBeans knows
+   already; if the list is not current, click Check for Newest first.
+2. Restart NetBeans when the installer asks: projects that are already open keep their processor path
    until then.
 
 Requires NetBeans 31.
+
+Without access to the Plugin Portal: download `lombok-nb-javac-<version>.nbm` from the
+[releases](https://github.com/dukehoff-gmbh/lombok-nb-javac/releases) and add it under Tools > Plugins >
+Downloaded > Add Plugins....
 
 ## Build
 
